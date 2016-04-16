@@ -29,25 +29,53 @@ async def on_ready():
 
 @client.event
 async def on_message(message):
-    if message.content.startswith("!ping"):
-    	await client.send_message(message.channel, "pong!")
 
-    elif message.content.startswith("!count"):
-        count = 0;
-        tmp = await client.send_message(message.channel, count)
-        for x in range (0, 10):
-            await asyncio.sleep(1)
-            count += 1
-            await client.edit_message(tmp, count)
+	if message.content.startswith("!ping"):
+		await client.send_message(message.channel, "pong!")
 
-    elif message.content.startswith("!lolsummoner"):
-    	# TODO: Make this function take region and summonerName as arguments
-    	parsed = (RiotAPI.getSummoner("na", "Cryrore", "689e58e2-23b2-415c-aca7-183ea7fe3535"))
+	elif message.content.startswith("!count"):
+		count = 0;
+		tmp = await client.send_message(message.channel, count)
+		for x in range (0, 10):
+			await asyncio.sleep(1)
+			count += 1
+			await client.edit_message(tmp, count)
 
-    	response = (parsed["cryrore"]["name"] + " is a level " + str(parsed["cryrore"]["summonerLevel"]) + \
-    		" summoner with ID number " + str(parsed["cryrore"]["id"]) + ".")
+	elif message.content.startswith("!lolsummoner"):
+		# TODO: Make this function take region and summonerName as arguments
+		parsedSumm = RiotAPI.getSummoner("na", str(message.author.name), "689e58e2-23b2-415c-aca7-183ea7fe3535")
+		parsedRank = RiotAPI.getRankedData("na", str(parsedSumm[message.author.name.lower()]["id"]), "689e58e2-23b2-415c-aca7-183ea7fe3535")
 
-    	await client.send_message(message.channel, response)
+		banter_dict = { 0: " *still* trying to climb out of ",
+						1: " perpetually stuck in ",
+						2: " lounging around in ",
+						3: " climbing through ",
+						4: " enjoying the weather in ",
+						5: " vaynespotting across ",
+						6: " walking the lonely road up "}
+		key = random.randint(0,6)
+
+		response = "**" + str(parsedSumm[message.author.name.lower()]["name"]) + "** (ID#" + \
+			str(parsedSumm[message.author.name.lower()]["id"]) + ") is an NA summoner" + \
+			banter_dict[key] + str(parsedRank[str(parsedSumm[message.author.name.lower()]["id"])][0]["tier"]) + " " + \
+			str(parsedRank[str(parsedSumm[message.author.name.lower()]["id"])][0]["entries"][0]["division"]) + \
+			" (" + str(parsedRank[str(parsedSumm[message.author.name.lower()]["id"])][0]["entries"][0]["leaguePoints"]) + \
+			" LP)."
+
+		await client.send_message(message.channel, response)
+
+
+	elif message.content.startswith("!hello"):
+		if message.author.name == "Cryrore":
+			await client.send_message(message.channel, "Hello, " + str(message.author.name) + \
+				"! I could have sworn I was just talking to you...")
+
+		else:
+			await client.send_message(message.channel, "Hiya, " + str(message.author.name) + "!")
+
+
+	elif message.content.startswith("!summon"):
+		await client.send_message(message.channel, "http://i.imgur.com/z5Vayfy.jpg")
 
 
 
