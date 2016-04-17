@@ -18,17 +18,22 @@ class league():
 		parsedSumm = RiotAPI.getSummoner("na", summonerName, "689e58e2-23b2-415c-aca7-183ea7fe3535")
 		if type(parsedSumm) == int: # If something went wrong...
 			await self.bot.say("Failed with error code " + str(parsedSumm) + ". Maybe try turning it off and on again?")
-
 			return
 		parsedRank = RiotAPI.getRankedData("na", str(parsedSumm[summonerName.lower()]["id"]), "689e58e2-23b2-415c-aca7-183ea7fe3535")
 
 		pulledName = parsedSumm[summonerName.lower()]["name"]
 		pulledID = str(parsedSumm[summonerName.lower()]["id"])
 		pulledLevel = str(parsedSumm[summonerName.lower()]["summonerLevel"])
-		pulledRankName = parsedRank[str(parsedSumm[summonerName.lower()]["id"])][0]["name"]
-		pulledRankTier = parsedRank[str(parsedSumm[summonerName.lower()]["id"])][0]["tier"].lower().capitalize()
-		pulledDivision = parsedRank[str(parsedSumm[summonerName.lower()]["id"])][0]["entries"][0]["division"]
-		pulledLeaguePoints = str(parsedRank[str(parsedSumm[summonerName.lower()]["id"])][0]["entries"][0]["leaguePoints"])
+		if type(parsedRank) == int:
+			pulledRankName = "Morello's Subarus"
+			pulledRankTier = "Unranked"
+			pulledDivision = "0"
+			pulledLeaguePoints = "0"
+		else:
+			pulledRankName = parsedRank[str(parsedSumm[summonerName.lower()]["id"])][0]["name"]
+			pulledRankTier = parsedRank[str(parsedSumm[summonerName.lower()]["id"])][0]["tier"].lower().capitalize()
+			pulledDivision = parsedRank[str(parsedSumm[summonerName.lower()]["id"])][0]["entries"][0]["division"]
+			pulledLeaguePoints = str(parsedRank[str(parsedSumm[summonerName.lower()]["id"])][0]["entries"][0]["leaguePoints"])
 
 		response = "\n__" + pulledName + "__" + "\nLevel " + pulledLevel + " summoner on region NA\n" + \
 					pulledRankTier + " " + pulledDivision + " (" + pulledLeaguePoints + " LP) in " + \
