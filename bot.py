@@ -36,7 +36,7 @@ async def on_ready():
 @bot.event
 async def on_message(message):
 
-	if message.content.startswith("hello doran"):
+	if message.content.startswith("hello doran"):##You should move this to the fluff extension warren
 		await bot.send_message(message.channel, "Greetings, summoner. :)")
 
 	await bot.process_commands(message)
