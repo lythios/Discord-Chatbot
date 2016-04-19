@@ -52,13 +52,14 @@ class league():
 
 	@commands.command(descrption="Lists the free champs of the week")
 	async def freechamps(self):
-		pulledChamps = rawpi.getFreeChamps("na", "689e58e2-23b2-415c-aca7-183ea7fe3535")
+		pulledChamps = rawpi.get_champions("na", True).json()
 
 		champList = []
 
 		for x in range(10):
 			champID = pulledChamps["champions"][x]["id"]
-			champName = rawpi.getChampByID("na", champID, "689e58e2-23b2-415c-aca7-183ea7fe3535")
+			champName = rawpi.get_champion_list_by_id("na", champID).json()["name"]
+			print(champName)
 			champList.append(champName)
 
 		response = "The free champions of the week are " + champList[0]
