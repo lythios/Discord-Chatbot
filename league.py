@@ -18,10 +18,13 @@ class league():
 		summonerName = summonerName.replace(" ", "").lower()
 
 		parsedSumm = rawpi.get_summoner_by_name("na", summonerName)
+		parsedSumm = parsedSumm.json()
 		if type(parsedSumm) == int: # If something went wrong...
 			await self.bot.say("Failed with error code " + str(parsedSumm) + ". Maybe try turning it off and on again?")
 			return
+
 		parsedRank = rawpi.get_ranked_stats("na", str(parsedSumm[summonerName]["id"]))
+		parsedRank = parsedRank.json()
 
 		pulledName = parsedSumm[summonerName]["name"]
 		pulledID = str(parsedSumm[summonerName]["id"])

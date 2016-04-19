@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 import asyncio
 import RiotAPI
+import rawpi
 import random
 import os
 
