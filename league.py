@@ -11,7 +11,8 @@ class league():
 
 	@commands.command(pass_context=True, description="Prints summoner name")
 	async def summoner(self, ctx,*, summonerName : str=None):
-		#TODO: Make this work for summoner names that have spaces and make region an argument
+		#TODO: Make this print an error in chat if the bot can't find the summoner
+		#TODO: Make this work for pre-30 summoners
 		if summonerName == None:
 			summonerName = str(ctx.message.author.name)
 
@@ -19,11 +20,12 @@ class league():
 
 		parsedSumm = rawpi.get_summoner_by_name("na", summonerName)
 		parsedSumm = parsedSumm.json()
-		if type(parsedSumm) == int: # If something went wrong...
+
+		if parsedSumm == 200: # If something went wrong...
 			await self.bot.say("Failed with error code " + str(parsedSumm) + ". Maybe try turning it off and on again?")
 			return
 
-		parsedRank = rawpi.get_ranked_stats("na", str(parsedSumm[summonerName]["id"]))
+		parsedRank = rawpi.get_league_entry("na", str(parsedSumm[summonerName]["id"]))
 		parsedRank = parsedRank.json()
 
 		pulledName = parsedSumm[summonerName]["name"]
