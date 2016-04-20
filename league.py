@@ -8,12 +8,19 @@ import json
 class league():
 	def __init__(self, bot):
 		self.bot = bot
+		with open('data.json') as data_file:
+			self.summonerIds = json.load(data_file)
+		print (self.summonerIds)
 
 	@commands.command(pass_context=True, description="Prints summoner name")
 	async def summoner(self, ctx,*, summonerName : str=None):
 		#TODO: Make this work for pre-30 summoners
 		if summonerName == None:
-			summonerName = str(ctx.message.author.name)
+			if ctx.message.author.name not in self.summonerIds:
+				await self.bot.say('''I don't know your League username yet.  Please register it with !register "yourUsernameHere"''')
+				return
+			else:
+				summonerName = self.summonerIds[ctx.message.author.name]
 
 		summonerName = summonerName.replace(" ", "").lower()
 
@@ -54,7 +61,16 @@ class league():
 
 		await self.bot.say(response)
 
-
+	@commands.command(pass_context=True, description="Registers a summoner name to a discord User")
+	async def register(self,ctx,*, summonerName : str=None):
+		print (ctx.message)
+		self.summonerIds[ctx.message.author.name]=summonerName
+		print (self.summonerIds)
+		with open('data.json', 'w') as outfile:
+			json.dump(self.summonerIds, outfile, sort_keys = True, indent = 4, ensure_ascii=False)
+		await self.bot.say("Your username has been registered!")
+		return
+		
 	@commands.command(description="Lists the free champs of the week")
 	async def freechamps(self):
 		pulledChamps = rawpi.get_champions("na", True).json()
