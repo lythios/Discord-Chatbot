@@ -105,7 +105,10 @@ class league():
 
 
 	@commands.command(pass_context=True, description="Notifies you when a summoner finishes their game")
-	async def track(self, *, summonerName : str=None):
+	async def track(self, ctx, *, summonerName : str=None):
+		if summonerName in self.summonerIds:
+			summonerName = self.summonerIds[summonerName]
+			print("Successfully matched discord name to League Username")
 		if summonerName == None:
 			await self.bot.say("You probably don't mean to track yourself. Give me a summoner name.")
 			return
@@ -162,7 +165,7 @@ class league():
 			try:
 				pulledError = pulledGame["status"]["status_code"]
 				if pulledError == 404:
-					await self.bot.say("Hey, @" + ctx.message.author + ", __" + pulledName + "__ just finished playing.")
+					await self.bot.say("Hey, @" + str(ctx.message.author.name) + ", __" + pulledName + "__ just finished playing.")
 				elif pulledError == 429:
 					await self.bot.say("Request limit exceeded (just tried to see if __" + pulledName + \
 										"__ was in game). Slow down!")
