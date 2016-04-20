@@ -60,7 +60,7 @@ class league():
 		pulledChamps = rawpi.get_champions("na", True).json()
 		try:
 			pulledError = pulledChamps["status"]["status_code"]
-			if pulledError = 429:
+			if pulledError == 429:
 				await self.bot.say("Request limit exceeded. " + \
 					"I can only take 10 requests per 10 seconds... slow down!")
 			else:
