@@ -11,50 +11,64 @@ class league():
 
 	@commands.command(pass_context=True, description="Prints summoner name")
 	async def summoner(self, ctx,*, summonerName : str=None):
-		#TODO: Make this print an error in chat if the bot can't find the summoner
 		#TODO: Make this work for pre-30 summoners
 		if summonerName == None:
 			summonerName = str(ctx.message.author.name)
 
 		summonerName = summonerName.replace(" ", "").lower()
 
-		parsedSumm = rawpi.get_summoner_by_name("na", summonerName)
-		parsedSumm = parsedSumm.json()
-
-		if parsedSumm == 200: # If something went wrong...
-			await self.bot.say("Failed with error code " + str(parsedSumm) + ". Maybe try turning it off and on again?")
+		parsedSumm = rawpi.get_summoner_by_name("na", summonerName).json()
+		try: 
+			pulledError = parsedSumm["status"]["status_code"]
+			if pulledError == 404:
+				await self.bot.say("Couldn't find that summoner. Maybe that was the wrong spelling?")
+			elif pulledError == 429:
+				await self.bot.say("Request limit exceeded. " + \
+									"I can only take 10 requests per 10 seconds... slow down!")
+			else:
+				await self.bot.say("Failed with error code " + str(pulledError) + \
+									". Maybe try turning it off and on again?")
 			return
+		except KeyError:
+			pulledName = parsedSumm[summonerName]["name"]
+			pulledID = str(parsedSumm[summonerName]["id"])
+			pulledLevel = str(parsedSumm[summonerName]["summonerLevel"])
 
-		parsedRank = rawpi.get_league_entry("na", str(parsedSumm[summonerName]["id"]))
-		parsedRank = parsedRank.json()
-
-		pulledName = parsedSumm[summonerName]["name"]
-		pulledID = str(parsedSumm[summonerName]["id"])
-		pulledLevel = str(parsedSumm[summonerName]["summonerLevel"])
-		if type(parsedRank) == int:
+		parsedRank = rawpi.get_league_entry("na", pulledID).json()
+		try:
+			parsedRank["status"]["status_code"]
 			pulledRankName = "Morello's Subarus"
 			pulledRankTier = "Unranked"
 			pulledDivision = "0"
-			pulledLeaguePoints = "0"
-		else:
-			pulledRankName = parsedRank[str(parsedSumm[summonerName]["id"])][0]["name"]
-			pulledRankTier = parsedRank[str(parsedSumm[summonerName]["id"])][0]["tier"].lower().capitalize()
-			pulledDivision = parsedRank[str(parsedSumm[summonerName]["id"])][0]["entries"][0]["division"]
-			pulledLeaguePoints = str(parsedRank[str(parsedSumm[summonerName]["id"])][0]["entries"][0]["leaguePoints"])
+			pulledLeaguePoints = "0"	
+		except KeyError:
+			pulledRankName = parsedRank[pulledID][0]["name"]
+			pulledRankTier = parsedRank[pulledID][0]["tier"].lower().capitalize()
+			pulledDivision = parsedRank[pulledID][0]["entries"][0]["division"]
+			pulledLeaguePoints = str(parsedRank[pulledID][0]["entries"][0]["leaguePoints"])
 
-		response = "\n__" + pulledName + "__" + "\nLevel " + pulledLevel + " summoner on region NA\n" + \
-					pulledRankTier + " " + pulledDivision + " (" + pulledLeaguePoints + " LP) in " + \
-					pulledRankName
+		response = "\n__" + pulledName + "__ (ID #" + pulledID + ")\nLevel " + pulledLevel + \
+					" summoner on region NA\n" + pulledRankTier + " " + pulledDivision + " (" + \
+					pulledLeaguePoints + " LP) in " + pulledRankName
 		print(response)
 
 		await self.bot.say(response)
 
 
-	@commands.command(descrption="Lists the free champs of the week")
+	@commands.command(description="Lists the free champs of the week")
 	async def freechamps(self):
 		pulledChamps = rawpi.get_champions("na", True).json()
-
-		champList = []
+		try:
+			pulledError = pulledChamps["status"]["status_code"]
+			if pulledError = 429:
+				await self.bot.say("Request limit exceeded. " + \
+					"I can only take 10 requests per 10 seconds... slow down!")
+			else:
+				await self.bot.say("Failed with error code " + str(pulledError) + \
+									". Maybe try turning it off and on again?")
+			return
+		except KeyError:
+			champList = []
 
 		for x in range(10):
 			champID = pulledChamps["champions"][x]["id"]
@@ -66,6 +80,37 @@ class league():
 		for x in range(8):
 			response += ", " + champList[x+1]
 		response += " and " + champList[9] + "."
+
+		await self.bot.say(response)
+
+
+	@commands.command(description="Notifies you when a summoner finishes their game")
+	async def track(self, *, summonerName : str=None):
+		#TODO: Make this print an error in chat if the bot can't find the summoner
+		if summonerName == None:
+			await self.bot.say("You probably don't mean to track yourself. Give me a summoner name.")
+			return
+
+		summonerName = summonerName.replace(" ", "").lower()
+
+		parsedSumm = rawpi.get_summoner_by_name("na", summonerName).json()
+
+		pulledName = parsedSumm[summonerName]["name"]
+		pulledID = str(parsedSumm[summonerName]["id"])
+		
+		pulledGame = rawpi.get_current_game("na", "NA1", pulledID).json()
+
+		pulledGameLength = pulledGame["gameLength"]
+
+		minutes = int(pulledGameLength / 60.0)
+		seconds = (pulledGameLength) - (minutes * 60)
+
+		response = "Ok! I'll let you know when __" + pulledName + "__ is out of game (WHEN IMPLEMENTED). Currently ingame for "
+
+		if (minutes > 0):
+			response += str(minutes) + " minutes, "
+		
+		response += str(seconds) + " seconds, and counting..."
 
 		await self.bot.say(response)
 
