@@ -104,7 +104,7 @@ class league():
 		await self.bot.say(response)
 
 
-	@commands.command(description="Notifies you when a summoner finishes their game")
+	@commands.command(pass_context=True, description="Notifies you when a summoner finishes their game")
 	async def track(self, *, summonerName : str=None):
 		if summonerName == None:
 			await self.bot.say("You probably don't mean to track yourself. Give me a summoner name.")
