@@ -10,7 +10,7 @@ class league():
 		self.bot = bot
 
 	@commands.command(pass_context=True, description="Prints summoner name")
-	async def summoner(self, ctx,*, summonerName : str=None):
+	async def summoner(self, ctx, *, summonerName : str=None):
 		#TODO: Make this work for pre-30 summoners
 		if summonerName == None:
 			summonerName = str(ctx.message.author.name)
@@ -21,7 +21,7 @@ class league():
 		try: 
 			pulledError = parsedSumm["status"]["status_code"]
 			if pulledError == 404:
-				await self.bot.say("Couldn't find that summoner. Maybe that was the wrong spelling?")
+				await self.bot.say("Couldn't find that summoner. Wrong spelling maybe?")
 			elif pulledError == 429:
 				await self.bot.say("Request limit exceeded. " + \
 									"I can only take 10 requests per 10 seconds... slow down!")
@@ -34,22 +34,26 @@ class league():
 			pulledID = str(parsedSumm[summonerName]["id"])
 			pulledLevel = str(parsedSumm[summonerName]["summonerLevel"])
 
+		response = "\n__" + pulledName + "__ (ID #" + pulledID + ")\nLevel " + pulledLevel + \
+					" summoner on region NA"
+
 		parsedRank = rawpi.get_league_entry("na", pulledID).json()
 		try:
-			parsedRank["status"]["status_code"]
-			pulledRankName = "Morello's Subarus"
-			pulledRankTier = "Unranked"
-			pulledDivision = "0"
-			pulledLeaguePoints = "0"	
+			pulledError = parsedRank["status"]["status_code"]
+			
+			if pulledError == 404 and int(pulledLevel) == 30:
+				response += "\nUnranked (No league information)"
+			elif pulledError == 429:
+				response += "\nUnknown (Request limit exceeded, try again)"
 		except KeyError:
 			pulledRankName = parsedRank[pulledID][0]["name"]
 			pulledRankTier = parsedRank[pulledID][0]["tier"].lower().capitalize()
 			pulledDivision = parsedRank[pulledID][0]["entries"][0]["division"]
 			pulledLeaguePoints = str(parsedRank[pulledID][0]["entries"][0]["leaguePoints"])
 
-		response = "\n__" + pulledName + "__ (ID #" + pulledID + ")\nLevel " + pulledLevel + \
-					" summoner on region NA\n" + pulledRankTier + " " + pulledDivision + " (" + \
+			response += "\n" + pulledRankTier + " " + pulledDivision + " (" + \
 					pulledLeaguePoints + " LP) in " + pulledRankName
+
 		print(response)
 
 		await self.bot.say(response)
@@ -86,7 +90,6 @@ class league():
 
 	@commands.command(description="Notifies you when a summoner finishes their game")
 	async def track(self, *, summonerName : str=None):
-		#TODO: Make this print an error in chat if the bot can't find the summoner
 		if summonerName == None:
 			await self.bot.say("You probably don't mean to track yourself. Give me a summoner name.")
 			return
@@ -94,25 +97,66 @@ class league():
 		summonerName = summonerName.replace(" ", "").lower()
 
 		parsedSumm = rawpi.get_summoner_by_name("na", summonerName).json()
-
-		pulledName = parsedSumm[summonerName]["name"]
-		pulledID = str(parsedSumm[summonerName]["id"])
+		try: 
+			pulledError = parsedSumm["status"]["status_code"]
+			if pulledError == 404:
+				await self.bot.say("Couldn't find that summoner. Wrong spelling maybe?")
+			elif pulledError == 429:
+				await self.bot.say("Request limit exceeded. " + \
+									"I can only take 10 requests per 10 seconds... slow down!")
+			else:
+				await self.bot.say("Failed with error code " + str(pulledError) + \
+									". Maybe try turning it off and on again?")
+			return
+		except KeyError:
+			pulledName = parsedSumm[summonerName]["name"]
+			pulledID = str(parsedSumm[summonerName]["id"])
 		
 		pulledGame = rawpi.get_current_game("na", "NA1", pulledID).json()
-
-		pulledGameLength = pulledGame["gameLength"]
+		try: 
+			pulledError = pulledGame["status"]["status_code"]
+			if pulledError == 404:
+				await self.bot.say("__" + pulledName + "__ is not currently in game. " + \
+									"You should track them down in person. :slight_smile:")
+			elif pulledError == 429:
+				await self.bot.say("Request limit exceeded. " + \
+									"I can only take 10 requests per 10 seconds... slow down!")
+			else:
+				await self.bot.say("Failed with error code " + str(pulledError) + \
+									". Maybe try turning it off and on again?")
+			return
+		except KeyError:
+			pulledGameLength = pulledGame["gameLength"]
 
 		minutes = int(pulledGameLength / 60.0)
 		seconds = (pulledGameLength) - (minutes * 60)
 
-		response = "Ok! I'll let you know when __" + pulledName + "__ is out of game (WHEN IMPLEMENTED). Currently ingame for "
-
+		response = "Ok! I'll let you know when __" + pulledName + "__ is out of game (WHEN IMPLEMENTED). "
 		if (minutes > 0):
-			response += str(minutes) + " minutes, "
-		
-		response += str(seconds) + " seconds, and counting..."
+			response += "That summoner has been in game for " + str(minutes + 5) + " minutes and " + \
+						str(seconds) + " seconds so far."
+		else:
+			response += "They've been in game for about 5 minutes so far (can't get an exact number until later)."
 
 		await self.bot.say(response)
+
+		while True:
+			await asyncio.sleep(5)
+			pulledGame = rawpi.get_current_game("na", "NA1", pulledID).json()
+			try:
+				pulledError = pulledGame["status"]["status_code"]
+				if pulledError == 404:
+					await self.bot.say("Hey, @" + ctx.message.author + ", __" + pulledName + "__ just finished playing.")
+				elif pulledError == 429:
+					await self.bot.say("Request limit exceeded (just tried to see if __" + pulledName + \
+										"__ was in game). Slow down!")
+				else:
+					await self.bot.say("Failed checking whether __" + pulledName + \
+										"__ was in game. Error code " + str(pulledError) + \
+										". Maybe try turning it off and on again?")
+				return
+			except KeyError:
+				print (pulledName + "is still in game.")
 
 
 
