@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 import asyncio
 import rawpi
+import champggapi
 import requests
 import json
 
@@ -11,6 +12,7 @@ class league():
 		with open('data.json') as data_file:
 			self.summonerIds = json.load(data_file)
 		print (self.summonerIds)
+
 
 	@commands.command(pass_context=True, description="Prints summoner name")
 	async def summoner(self, ctx, *, summonerName : str=None):
@@ -65,6 +67,7 @@ class league():
 
 		await self.bot.say(response)
 
+
 	@commands.command(pass_context=True, description="Registers a summoner name to a discord User")
 	async def register(self,ctx,*, summonerName : str=None):
 		print (ctx.message)
@@ -75,6 +78,7 @@ class league():
 		await self.bot.say("Your username has been registered!")
 		return
 		
+
 	@commands.command(description="Lists the free champs of the week")
 	async def freechamps(self):
 		pulledChamps = rawpi.get_champions("na", True).json()
@@ -176,6 +180,62 @@ class league():
 				return
 			except KeyError:
 				print (pulledName + "is still in game.")
+
+
+	@commands.command(description="Lists the top five counters to a champion")
+	async def counter(self, champName : str=None, role : str=None, size : int=None):
+		if champName == None:
+			await self.bot.say("Counter nothing by playing nothing. Trust me.")
+			return
+
+		parsedMatchups = champggapi.get_matchups(champName).json()
+
+		try:
+			pulledError = parsedMatchups["error"]
+			await self.bot.say("Error: " + pulledError)
+			return
+		except:
+			roleNum = len(parsedMatchups)
+
+		if role != None:
+			for x in range(roleNum):
+				if role.lower() == parsedMatchups[x]["role"].lower():
+					roleIndex = x
+					break
+				else:
+					roleIndex = -1
+		else:
+			roleIndex = 0
+
+		if roleIndex == -1:
+			await self.bot.say("I haven't seen " + champName.lower().capitalize() + " " + role + " before...")
+			return
+
+		searchingRole = parsedMatchups[roleIndex]["role"]
+		unsortedMatchups = parsedMatchups[roleIndex]["matchups"]
+
+		# Reverse so it's descending order
+		sortedMatchups = sorted(unsortedMatchups, key=lambda k: k["winRate"], reverse=True)
+		print(sortedMatchups)
+
+		if size == None:
+			size = 5
+		elif size > len(sortedMatchups):
+			size = len(sortedMatchups)
+
+		response = "\n" + champName.lower().capitalize() + "'s top " + str(size) + " (" + searchingRole + ") counters, sorted by win rate:\n"
+		for x in range(size):
+			response += sortedMatchups[x]["key"] + ": " + str(sortedMatchups[x]["winRate"]) + "%\n"
+
+		await self.bot.say(response)
+
+
+
+
+
+
+
+
 
 
 
