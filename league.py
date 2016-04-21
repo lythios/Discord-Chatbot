@@ -11,7 +11,8 @@ class league():
 		with open('data.json') as data_file:
 			self.summonerIds = json.load(data_file)
 		print (self.summonerIds)
-
+		self.userLists={}
+	
 	@commands.command(pass_context=True, description="Prints summoner name")
 	async def summoner(self, ctx, *, summonerName : str=None):
 		#TODO: Make this work for pre-30 summoners
@@ -106,6 +107,8 @@ class league():
 
 	@commands.command(pass_context=True, description="Notifies you when a summoner finishes their game")
 	async def track(self, ctx, *, summonerName : str=None):
+		if "track" not in self.userLists:
+			self.userLists['track']=[]
 		if summonerName in self.summonerIds:
 			summonerName = self.summonerIds[summonerName]
 			print("Successfully matched discord name to League Username")
@@ -116,6 +119,7 @@ class league():
 		summonerName = summonerName.replace(" ", "").lower()
 
 		parsedSumm = rawpi.get_summoner_by_name("na", summonerName).json()
+		print (parsedSumm)
 		try: 
 			pulledError = parsedSumm["status"]["status_code"]
 			if pulledError == 404:
@@ -132,6 +136,7 @@ class league():
 			pulledID = str(parsedSumm[summonerName]["id"])
 		
 		pulledGame = rawpi.get_current_game("na", "NA1", pulledID).json()
+		print (pulledGame)
 		try: 
 			pulledError = pulledGame["status"]["status_code"]
 			if pulledError == 404:
@@ -156,27 +161,29 @@ class league():
 						str(seconds) + " seconds so far."
 		else:
 			response += "They've been in game for about 5 minutes so far (can't get an exact number until later)."
-
+		entry=[pulledName,pulledID,pulledGame,ctx.message.author.name]
+		self.userLists[track].append(entry)
+		print(self.userLists[track])
 		await self.bot.say(response)
-
-		while True:
-			await asyncio.sleep(5)
-			pulledGame = rawpi.get_current_game("na", "NA1", pulledID).json()
-			try:
-				pulledError = pulledGame["status"]["status_code"]
-				if pulledError == 404:
-					await self.bot.say("Hey, @" + str(ctx.message.author.name) + ", __" + pulledName + "__ just finished playing.")
-				elif pulledError == 429:
-					await self.bot.say("Request limit exceeded (just tried to see if __" + pulledName + \
-										"__ was in game). Slow down!")
-				else:
-					await self.bot.say("Failed checking whether __" + pulledName + \
-										"__ was in game. Error code " + str(pulledError) + \
-										". Maybe try turning it off and on again?")
-				return
-			except KeyError:
-				print (pulledName + "is still in game.")
-
+		
+		#	while True:
+		#		await asyncio.sleep(5)
+		#		pulledGame = rawpi.get_current_game("na", "NA1", pulledID).json()
+		#		try:
+		#			pulledError = pulledGame["status"]["status_code"]
+		#			if pulledError == 404:
+		#				await self.bot.say("Hey, @" + str(ctx.message.author.name) + ", __" + pulledName + "__ just finished playing.")
+		#			elif pulledError == 429:
+		#				await self.bot.say("Request limit exceeded (just tried to see if __" + pulledName + \
+		#									"__ was in game). Slow down!")
+		#			else:
+		#				await self.bot.say("Failed checking whether __" + pulledName + \
+		#									"__ was in game. Error code " + str(pulledError) + \
+		#									". Maybe try turning it off and on again?")
+		#			return
+		#		except KeyError:
+		#			print (pulledName + "is still in game.")
+		
 
 
 
