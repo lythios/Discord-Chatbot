@@ -154,7 +154,7 @@ class league():
 		minutes = int(pulledGameLength / 60.0)
 		seconds = (pulledGameLength) - (minutes * 60)
 
-		response = "Ok! I'll let you know when __" + pulledName + "__ is out of game (WHEN IMPLEMENTED). "
+		response = "Ok! I'll let you know when __" + pulledName + "__ is out of game. "
 		if (minutes > 0):
 			response += "That summoner has been in game for " + str(minutes + 5) + " minutes and " + \
 						str(seconds) + " seconds so far."
@@ -169,7 +169,7 @@ class league():
 			try:
 				pulledError = pulledGame["status"]["status_code"]
 				if pulledError == 404:
-					await self.bot.say("Hey, @" + str(ctx.message.author.name) + ", __" + pulledName + "__ just finished playing.")
+					await self.bot.say("Hey, " + str(ctx.message.author.mention) + ", __" + pulledName + "__ just finished playing.")
 				elif pulledError == 429:
 					await self.bot.say("Request limit exceeded (just tried to see if __" + pulledName + \
 										"__ was in game). Slow down!")
@@ -179,7 +179,7 @@ class league():
 										". Maybe try turning it off and on again?")
 				return
 			except KeyError:
-				print (pulledName + "is still in game.")
+				print (pulledName + " is still in game.")
 
 
 	@commands.command(description="Lists the top five counters to a champion")
