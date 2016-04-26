@@ -184,7 +184,12 @@ class league():
 		#		except KeyError:
 		#			print (pulledName + "is still in game.")
 		
-
+async def checkUsers():
+	for member in get_all_members():
+		if member.Status == "online" and member.name in self.summonerIds and member.name not in self.userLists:
+			self.userLists[member.name]=["pentas","mastery"]
+	print self.UserLists
+	
 
 
 
