@@ -230,6 +230,58 @@ class league():
 		await self.bot.say(response)
 
 
+	@commands.command(description="Gets champion mastery for a summoner")
+	async def mastery(self, summonerName : str=None):
+		if summonerName == None:
+			await self.bot.say("What summoner should I look up?")
+			return
+
+		parsedSumm = rawpi.get_summoner_by_name("na", summonerName).json()
+		try: 
+			pulledError = parsedSumm["status"]["status_code"]
+			if pulledError == 404:
+				await self.bot.say("Couldn't find that summoner. Wrong spelling maybe?")
+			elif pulledError == 429:
+				await self.bot.say("Request limit exceeded. " + \
+									"I can only take 10 requests per 10 seconds... slow down!")
+			else:
+				await self.bot.say("Failed with error code " + str(pulledError) + \
+									". Maybe try turning it off and on again?")
+			return
+		except KeyError:
+			pulledName = parsedSumm[summonerName.lower()]["name"]
+			pulledID = str(parsedSumm[summonerName.lower()]["id"])
+
+		count = 3
+
+		parsedMastery = rawpi.get_top_champ_mastery("NA1", pulledID, count).json()
+		#try:
+		#	pulledError = parsedMastery["status"]["status_code"]
+		#	if pulledError == 404:
+		#		await self.bot.say("Couldn't find any mastery for that summoner. Play some games, silly!")
+		#	elif pulledError == 429:
+		#		await self.bot.say("Request limit exceeded. " + \
+		#							"I can only take 10 requests per 10 seconds... slow down!")
+		#	else:
+		#		await self.bot.say("Failed with error code " + str(pulledError) + \
+		#							". Maybe try turning it off and on again?")
+		#	return
+		#except KeyError:
+		mastery_dict = {}
+		response = ""
+		for x in range(count):
+			champID = parsedMastery[x]["championId"]
+			champName = rawpi.get_champion_list_by_id("na", champID).json()["name"]
+			mastery_dict[champName] = parsedMastery[x]["championPoints"]
+			response = mastery_dict
+
+		await self.bot.say(response)
+
+
+
+
+
+
 
 
 

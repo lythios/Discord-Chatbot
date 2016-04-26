@@ -399,3 +399,14 @@ def get_teams(region, teamIds):
     return requests.get(
         (REGION_ENDPOINT + "v2.4/team/{1}?api_key={2}").
         format(region, teamIds, KEY))
+
+# CHAMPION-MASTERY-vWARREN.OWEN
+
+
+def get_top_champ_mastery(platformId, summonerId, count): # Technically should have "region" arg...
+    """
+    DOCSTRING GOES HERE
+    """
+    return requests.get(
+        "https://na.api.pvp.net/championmastery/location/" + platformId + \
+        "/player/" + summonerId + "/topchampions?api_key=" + KEY)
