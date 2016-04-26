@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 import asyncio
 import rawpi
+import champggapi
 import requests
 import json
 
@@ -12,7 +13,7 @@ class league():
 			self.summonerIds = json.load(data_file)
 		print (self.summonerIds)
 		self.userLists={}
-	
+		
 	@commands.command(pass_context=True, description="Prints summoner name")
 	async def summoner(self, ctx, *, summonerName : str=None):
 		#TODO: Make this work for pre-30 summoners
@@ -66,6 +67,7 @@ class league():
 
 		await self.bot.say(response)
 
+
 	@commands.command(pass_context=True, description="Registers a summoner name to a discord User")
 	async def register(self,ctx,*, summonerName : str=None):
 		print (ctx.message)
@@ -76,6 +78,7 @@ class league():
 		await self.bot.say("Your username has been registered!")
 		return
 		
+
 	@commands.command(description="Lists the free champs of the week")
 	async def freechamps(self):
 		pulledChamps = rawpi.get_champions("na", True).json()
@@ -105,10 +108,7 @@ class league():
 		await self.bot.say(response)
 
 
-	@commands.command(pass_context=True, description="Notifies you when a summoner finishes their game")
 	async def track(self, ctx, *, summonerName : str=None):
-		if "track" not in self.userLists:
-			self.userLists['track']=[]
 		if summonerName in self.summonerIds:
 			summonerName = self.summonerIds[summonerName]
 			print("Successfully matched discord name to League Username")
@@ -119,7 +119,6 @@ class league():
 		summonerName = summonerName.replace(" ", "").lower()
 
 		parsedSumm = rawpi.get_summoner_by_name("na", summonerName).json()
-		print (parsedSumm)
 		try: 
 			pulledError = parsedSumm["status"]["status_code"]
 			if pulledError == 404:
@@ -136,7 +135,6 @@ class league():
 			pulledID = str(parsedSumm[summonerName]["id"])
 		
 		pulledGame = rawpi.get_current_game("na", "NA1", pulledID).json()
-		print (pulledGame)
 		try: 
 			pulledError = pulledGame["status"]["status_code"]
 			if pulledError == 404:
@@ -155,41 +153,89 @@ class league():
 		minutes = int(pulledGameLength / 60.0)
 		seconds = (pulledGameLength) - (minutes * 60)
 
-		response = "Ok! I'll let you know when __" + pulledName + "__ is out of game (WHEN IMPLEMENTED). "
+		response = "Ok! I'll let you know when __" + pulledName + "__ is out of game. "
 		if (minutes > 0):
 			response += "That summoner has been in game for " + str(minutes + 5) + " minutes and " + \
 						str(seconds) + " seconds so far."
 		else:
 			response += "They've been in game for about 5 minutes so far (can't get an exact number until later)."
-		entry=[pulledName,pulledID,pulledGame,ctx.message.author.name]
-		self.userLists[track].append(entry)
-		print(self.userLists[track])
+
+		await self.bot.say(response)
+
+		while True:
+			await asyncio.sleep(5)
+			pulledGame = rawpi.get_current_game("na", "NA1", pulledID).json()
+			try:
+				pulledError = pulledGame["status"]["status_code"]
+				if pulledError == 404:
+					await self.bot.say("Hey, " + str(ctx.message.author.mention) + ", __" + pulledName + "__ just finished playing.")
+				elif pulledError == 429:
+					await self.bot.say("Request limit exceeded (just tried to see if __" + pulledName + \
+										"__ was in game). Slow down!")
+				else:
+					await self.bot.say("Failed checking whether __" + pulledName + \
+										"__ was in game. Error code " + str(pulledError) + \
+										". Maybe try turning it off and on again?")
+				return
+			except KeyError:
+				print (pulledName + " is still in game.")
+
+		
+
+	
+	@commands.command(description="Lists the top five counters to a champion")
+	async def counter(self, champName : str=None, role : str=None, size : int=None):
+		if champName == None:
+			await self.bot.say("Counter nothing by playing nothing. Trust me.")
+			return
+
+		parsedMatchups = champggapi.get_matchups(champName).json()
+
+		try:
+			pulledError = parsedMatchups["error"]
+			await self.bot.say("Error: " + pulledError)
+			return
+		except:
+			roleNum = len(parsedMatchups)
+
+		if role != None:
+			for x in range(roleNum):
+				if role.lower() == parsedMatchups[x]["role"].lower():
+					roleIndex = x
+					break
+				else:
+					roleIndex = -1
+		else:
+			roleIndex = 0
+
+		if roleIndex == -1:
+			await self.bot.say("I haven't seen " + champName.lower().capitalize() + " " + role + " before...")
+			return
+
+		searchingRole = parsedMatchups[roleIndex]["role"]
+		unsortedMatchups = parsedMatchups[roleIndex]["matchups"]
+
+		# Reverse so it's descending order
+		sortedMatchups = sorted(unsortedMatchups, key=lambda k: k["winRate"], reverse=True)
+		print(sortedMatchups)
+
+		if size == None:
+			size = 5
+		elif size > len(sortedMatchups):
+			size = len(sortedMatchups)
+
+		response = "\n" + champName.lower().capitalize() + "'s top " + str(size) + " (" + searchingRole + ") counters, sorted by win rate:\n"
+		for x in range(size):
+			response += sortedMatchups[x]["key"] + ": " + str(sortedMatchups[x]["winRate"]) + "%\n"
+
 		await self.bot.say(response)
 		
-		#	while True:
-		#		await asyncio.sleep(5)
-		#		pulledGame = rawpi.get_current_game("na", "NA1", pulledID).json()
-		#		try:
-		#			pulledError = pulledGame["status"]["status_code"]
-		#			if pulledError == 404:
-		#				await self.bot.say("Hey, @" + str(ctx.message.author.name) + ", __" + pulledName + "__ just finished playing.")
-		#			elif pulledError == 429:
-		#				await self.bot.say("Request limit exceeded (just tried to see if __" + pulledName + \
-		#									"__ was in game). Slow down!")
-		#			else:
-		#				await self.bot.say("Failed checking whether __" + pulledName + \
-		#									"__ was in game. Error code " + str(pulledError) + \
-		#									". Maybe try turning it off and on again?")
-		#			return
-		#		except KeyError:
-		#			print (pulledName + "is still in game.")
-		
-async def checkUsers():
-	for member in get_all_members():
-		if member.Status == "online" and member.name in self.summonerIds and member.name not in self.userLists:
-			self.userLists[member.name]=["pentas","mastery"]
-	print self.UserLists
-	
+	async def checkUsers():
+		for member in get_all_members():
+			if member.Status == "online" and member.name in self.summonerIds and member.name not in self.userLists:
+				self.userLists[member.name]=["pentas","mastery"]
+		print self.UserLists
+
 
 
 

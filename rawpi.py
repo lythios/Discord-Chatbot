@@ -11,9 +11,9 @@ with open(os.path.join(__location__, 'config'), 'r') as f:
     try:
         config = json.load(f)
     except ValueError:
-        config = {'key': ""}
+        config = {'riotKey': ""}
 
-KEY = config["key"]
+KEY = config["riotKey"]
 GLOBAL_ENDPOINT = "https://global.api.pvp.net/api/lol/static-data/{0}/"
 REGION_ENDPOINT = "https://{0}.api.pvp.net/api/lol/{0}/"
 
