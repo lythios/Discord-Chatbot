@@ -4,6 +4,7 @@ import asyncio
 import rawpi
 import random
 import os
+from league import league
 
 
 description = "Warren's bot"
@@ -16,6 +17,8 @@ async def on_ready():
     print(bot.user.name)
     print(bot.user.id)
     print("------")
+    LoL=league(bot)   
+    LoL.checkUsers()
 
     avatar_dict = { 0: "avatar_yellow.png",
     				1: "avatar_blue.png",

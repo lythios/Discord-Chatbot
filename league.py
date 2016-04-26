@@ -107,8 +107,9 @@ class league():
 
 		await self.bot.say(response)
 
-
+	@commands.command(pass_context=True, description="Notifies you when a summoner finishes their game")
 	async def track(self, ctx, *, summonerName : str=None):
+		print(summonerName)
 		if summonerName in self.summonerIds:
 			summonerName = self.summonerIds[summonerName]
 			print("Successfully matched discord name to League Username")
@@ -230,11 +231,11 @@ class league():
 
 		await self.bot.say(response)
 		
-	async def checkUsers():
-		for member in get_all_members():
-			if member.Status == "online" and member.name in self.summonerIds and member.name not in self.userLists:
+	def checkUsers(self):
+		for member in self.bot.get_all_members():
+			if member.status == "online" and member.name in self.summonerIds and member.name not in self.userLists:
 				self.userLists[member.name]=["pentas","mastery"]
-		print self.UserLists
+		print ("User list:" + repr(self.userLists))
 
 
 
