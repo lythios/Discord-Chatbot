@@ -5,24 +5,25 @@ import rawpi
 import champggapi
 import requests
 import json
+import sys
 
 class league():
 	def __init__(self, bot):
 		self.bot = bot
 		with open('data.json') as data_file:
-			self.summonerIds = json.load(data_file)
-		print (self.summonerIds)
+			self.registeredSummoner = json.load(data_file)
+		print (self.registeredSummoner)
 		self.userLists={}
 		
 	@commands.command(pass_context=True, description="Prints summoner name")
 	async def summoner(self, ctx, *, summonerName : str=None):
 		#TODO: Make this work for pre-30 summoners
 		if summonerName == None:
-			if ctx.message.author.name not in self.summonerIds:
+			if ctx.message.author.name not in self.registeredSummoner:
 				await self.bot.say('''I don't know your League username yet.  Please register it with !register "yourUsernameHere"''')
 				return
 			else:
-				summonerName = self.summonerIds[ctx.message.author.name]
+				summonerName = self.registeredSummoner[ctx.message.author.name][0]
 
 		summonerName = summonerName.replace(" ", "").lower()
 
@@ -71,10 +72,27 @@ class league():
 	@commands.command(pass_context=True, description="Registers a summoner name to a discord User")
 	async def register(self,ctx,*, summonerName : str=None):
 		print (ctx.message)
-		self.summonerIds[ctx.message.author.name]=summonerName
-		print (self.summonerIds)
+
+		parsedSumm = rawpi.get_summoner_by_name("na", summonerName.lower()).json()
+		try: 
+			pulledError = parsedSumm["status"]["status_code"]
+			if pulledError == 404:
+				print("Couldn't find that summoner. Wrong spelling maybe?")
+			elif pulledError == 429:
+				print("Request limit exceeded. " + \
+									"I can only take 10 requests per 10 seconds... slow down!")
+			else:
+				print("Failed with error code " + str(pulledError) + \
+									". Maybe try turning it off and on again?")
+			return
+		except KeyError:
+			pulledName = parsedSumm[summonerName.lower()]["name"]
+			pulledID = str(parsedSumm[summonerName.lower()]["id"])
+
+		self.registeredSummoner[ctx.message.author.name] = [pulledName, pulledID]
+		print (self.registeredSummoner)
 		with open('data.json', 'w') as outfile:
-			json.dump(self.summonerIds, outfile, sort_keys = True, indent = 4, ensure_ascii=False)
+			json.dump(self.registeredSummoner, outfile, sort_keys = True, indent = 4, ensure_ascii=False)
 		await self.bot.say("Your username has been registered!")
 		return
 		
@@ -110,8 +128,8 @@ class league():
 	@commands.command(pass_context=True, description="Notifies you when a summoner finishes their game")
 	async def track(self, ctx, *, summonerName : str=None):
 		print(summonerName)
-		if summonerName in self.summonerIds:
-			summonerName = self.summonerIds[summonerName]
+		if summonerName in self.registeredSummoner:
+			summonerName = self.registeredSummoner[summonerName][0]
 			print("Successfully matched discord name to League Username")
 		if summonerName == None:
 			await self.bot.say("You probably don't mean to track yourself. Give me a summoner name.")
@@ -233,9 +251,36 @@ class league():
 		
 	def checkUsers(self):
 		for member in self.bot.get_all_members():
-			if member.status == "online" and member.name in self.summonerIds and member.name not in self.userLists:
+			if (member.status == member.status.online and member.name in self.registeredSummoner and member.name not in self.userLists):
 				self.userLists[member.name]=["pentas","mastery"]
+				print (member.name + " should be added")
+				print (member.game)
+			print(member.name.encode(sys.stdout.encoding, errors='replace'), member.status)
 		print ("User list:" + repr(self.userLists))
+
+
+class summoner():
+	def __init__(self, name : str):
+		self.name = name
+
+		parsedSumm = rawpi.get_summoner_by_name("na", name.lower()).json()
+		try: 
+			pulledError = parsedSumm["status"]["status_code"]
+			if pulledError == 404:
+				print("Couldn't find that summoner. Wrong spelling maybe?")
+			elif pulledError == 429:
+				print("Request limit exceeded. " + \
+									"I can only take 10 requests per 10 seconds... slow down!")
+			else:
+				print("Failed with error code " + str(pulledError) + \
+									". Maybe try turning it off and on again?")
+			return
+		except KeyError:
+			pulledName = parsedSumm[name.lower()]["name"]
+			pulledID = str(parsedSumm[name.lower()]["id"])
+
+		self.id = pulledID
+
 
 
 

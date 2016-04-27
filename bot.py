@@ -17,8 +17,7 @@ async def on_ready():
     print(bot.user.name)
     print(bot.user.id)
     print("------")
-    LoL=league(bot)   
-    LoL.checkUsers()
+    
 
     avatar_dict = { 0: "avatar_yellow.png",
     				1: "avatar_blue.png",
@@ -45,5 +44,22 @@ async def on_message(message):
 	await bot.process_commands(message)
 
 
+async def backgroundCheckUsers():
+    await bot.wait_until_ready()
+    counter = 0
+    LoL=league(bot)
+    while not bot.is_closed:
+        counter += 1
+        LoL.checkUsers()
+        await asyncio.sleep(5)
 
-bot.run("MTcwNjE3NTk5NTI3MjIzMzA2.CfLThQ.uM6EunSPIt3byB7fs36whc9cHIs") # This is the bot's token
+loop = asyncio.get_event_loop()
+
+try:
+    loop.create_task(backgroundCheckUsers())
+    loop.run_until_complete(bot.run("MTcwNjE3NTk5NTI3MjIzMzA2.CfLThQ.uM6EunSPIt3byB7fs36whc9cHIs")) # This is the bot's token
+    loop.run_until_complete(bot.connect())
+except:
+    loop.run_until_complete(bot.close())
+finally:
+    loop.close()
