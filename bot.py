@@ -6,6 +6,9 @@ import random
 import os
 from league import league
 
+__location__ = os.path.realpath(
+    os.path.join(os.getcwd(), os.path.dirname(__file__)))
+
 
 description = "Warren's bot"
 bot = commands.Bot(command_prefix="!", description=description)
@@ -34,6 +37,14 @@ async def on_ready():
     bot.load_extension("fluff")
     bot.load_extension("league")
 
+    with open(os.path.join(__location__, 'config'), 'r') as f:
+        try:
+            config = json.load(f)
+        except ValueError:
+            config = {'token': ""}
+
+    TOKEN = config["token"]
+
 
 @bot.event
 async def on_message(message):
@@ -55,9 +66,10 @@ async def backgroundCheckUsers():
 
 loop = asyncio.get_event_loop()
 
+
 try:
     loop.create_task(backgroundCheckUsers())
-    loop.run_until_complete(bot.run("MTcwNjE3NTk5NTI3MjIzMzA2.CfLThQ.uM6EunSPIt3byB7fs36whc9cHIs")) # This is the bot's token
+    loop.run_until_complete(bot.run(TOKEN)) # This is the bot's token
     loop.run_until_complete(bot.connect())
 except:
     loop.run_until_complete(bot.close())
